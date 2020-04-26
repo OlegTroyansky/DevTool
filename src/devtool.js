@@ -189,6 +189,47 @@ define(["qlik",
 					showMsg("Variables exported to " + filename);
 				});
 			}
+			else if(filetype == "csv") {
+				var str="Variable, Definition \r\n";
+				var lastSort="";
+				getVariables(engineApp).then(function(vars){
+					vars.map(function(v){
+						v.devtoolSortGroup = (v.qIsReserved ? '11' : v.qIsScriptCreated ? '21' : '22');
+						return v;
+					}).sort(function(a,b){
+						var av = a.devtoolSortGroup + a.qName;
+						var bv = b.devtoolSortGroup + b.qName;
+						return av == bv ? 0 : av  < bv ? -1 : 1;
+					}).forEach(function(v) {
+						if(v.devtoolSortGroup != lastSort) {
+							switch (v.devtoolSortGroup) {
+								case "11":
+									//str += "// ***** Reserved Variables *****\r\n";
+									str += "\r\n";
+									break;
+								case "21":
+									//str += "// *****  Script Defined Variables ***** \r\n";
+									str += "\r\n";
+									break;
+								case "22":
+									//str += "// *****  Non-script Defined Variables ***** \r\n";
+									str += "\r\n";
+									break;
+								default:
+									break;
+							}
+						}
+						lastSort = v.devtoolSortGroup;
+						var comment = v.qComment != undefined ? "// " + v.qComment : "";
+						str +=  v.qName + "," +'"' + v.qDefinition + '"' + "\r\n";
+					});
+					
+					var filename = qlik.currApp(this).model.layout.qTitle + "-variables.txt";
+					var data = 'data:text/plain;charset=utf-8,' + encodeURIComponent(str);
+					download(data, filename, "text/plain");	// Download in the browser
+					showMsg("Variables exported to " + filename);
+				});
+			}
 			else {
 				var str="";
 				getVariables(engineApp).then(function(vars){
